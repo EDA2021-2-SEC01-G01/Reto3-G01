@@ -19,6 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along withthis program.  If not, see <http://www.gnu.org/licenses/>.
  """
+from os import get_terminal_size
 import config as cf
 import sys
 import controller
@@ -59,12 +60,49 @@ def loadData(database):
   print('7. UFOS-utf8-80pct')
   print('8. UFOS-utf8-large')
 
-  file = files.get(input('> ')[0], None)
+  file = files.get(input('> '), None)
 
   if file is None:
     loadData(database)
   else:
     controller.loadData(database, file)
+    terminalSize = get_terminal_size()[0]
+    print('\n' + ('-' * terminalSize))
+    string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
+    print('\n', ' ' * ((terminalSize // 2) - len(string) // 2 - 1), string, ' ' * ((terminalSize - (terminalSize // 2)) - len(string) - 1))
+    print('\n' + ('-' * terminalSize))
+
+    print('\n\nLos primeros 5 avistamientos cargados son:\n')
+    for i in lt.iterator(lt.subList(database['sightings'], 1, 5)):
+      print('\n' + ('-' * terminalSize) + '\n')
+      printSighting(i)
+
+    print('\n' + ('-' * terminalSize) + '\n\n\n')
+
+    print('\n\nLos ultimos 5 avistamientos cargados son:\n')
+      
+    for i in lt.iterator(lt.subList(database['sightings'], 1, 5)):
+      print('\n' + ('-' * terminalSize) + '\n')
+      printSighting(i)
+
+    print('\n' + ('-' * terminalSize) + '\n\n')
+
+
+def printSighting(sighting):
+  print('Fecha y hora: ', sighting['datetime'])
+  print('Ciudad: ', sighting['city'])
+  print('Estado: ', sighting['state'])
+  print('País: ', sighting['country'])
+  print('Forma: ', sighting['shape'])
+  print('Duración(s): ', sighting['duration (seconds)'])
+  print('Duración(h/m): ', sighting['duration (hours/min)'])
+  print('Comentarios:')
+  print('\t*', sighting['comments'].replace('&#44', ','))
+  print('Fecha de publicación', sighting['date posted'])
+  print('Coordenadas:')
+  print('\tLatitud:', sighting['latitude'])
+  print('\tLongitud:', sighting['longitude'])
+
 
 def printMenu():
   print("Bienvenido")

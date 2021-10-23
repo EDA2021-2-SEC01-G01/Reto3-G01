@@ -43,6 +43,8 @@ los mismos.
 def newDatabase():
   database = {}
 
+  database['sightings'] = lt.newList('ARRAY_LIST')
+
   database['cityIndex'] = om.newMap(omaptype='RBT')
 
   database['dateIndex'] = om.newMap(omaptype='RBT')
@@ -53,6 +55,7 @@ def newDatabase():
 # Funciones para agregar informacion al catalogo
 
 def addSighting(database, sighting):
+  lt.addLast(database['sightings'], sighting)
   updateCityIndex(database['cityIndex'] ,sighting)
   updateDateIndex(database['dateIndex'] ,sighting)
   return database

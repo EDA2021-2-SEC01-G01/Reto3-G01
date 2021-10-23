@@ -47,6 +47,8 @@ def loadData(database, sightingsFile):
 
   return database
 
-# Funciones de ordenamiento
-
 # Funciones de consulta sobre el catálogo
+
+def getOrderedCitiesByCount(database, city):
+  cityKey = model.newCityKey(city)
+  return model.getOrderedCitiesByCount(database, cityKey)

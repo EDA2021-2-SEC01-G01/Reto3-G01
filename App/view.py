@@ -34,6 +34,9 @@ se hace la solicitud al controlador para ejecutar la
 operación solicitada
 """
 
+  
+terminalSize = get_terminal_size()[0]
+
 def initDatabase():
   return controller.init()
 
@@ -66,7 +69,6 @@ def loadData(database):
     loadData(database)
   else:
     controller.loadData(database, file)
-    terminalSize = get_terminal_size()[0]
     print('\n' + ('-' * terminalSize))
     string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
     print('\n', ' ' * ((terminalSize // 2) - len(string) // 2 - 1), string, ' ' * ((terminalSize - (terminalSize // 2)) - len(string) - 1))
@@ -81,11 +83,52 @@ def loadData(database):
 
     print('\n\nLos ultimos 5 avistamientos cargados son:\n')
       
-    for i in lt.iterator(lt.subList(database['sightings'], 1, 5)):
+    for i in lt.iterator(lt.subList(database['sightings'], (lt.size(database['sightings']) - 5), 5)):
       print('\n' + ('-' * terminalSize) + '\n')
       printSighting(i)
 
     print('\n' + ('-' * terminalSize) + '\n\n')
+
+
+#=============================
+#           REQ. 1
+#=============================
+
+def getOrderedCitiesByCount(database):
+
+  city = input('Ingresa la ciudad: \n> ')
+  info = controller.getOrderedCitiesByCount(database, city)
+  
+  string = 'Contar los avistamientos en una ciudad'
+  print('\n' + '=' * ((terminalSize // 2) - len(string) // 2), string, '=' * ((terminalSize // 2) - len(string) // 2 - 1))
+
+  print('\nHay', lt.size(info[0]), 'diferentes ciudades con avistamientos de OVNIs...')
+  print('El Top 5 de las ciudades con más avistamientos de OVNIs es:')
+
+  for j in lt.iterator(lt.subList(info[0], 1, 5)):
+    i = lt.firstElement(j)
+    print('\n' + ('-' * terminalSize) + '\n')
+    print('Ciudad:', i['city'] + ', Cantidad:', lt.size(j))
+  
+  print('\n' + ('-' * terminalSize) + '\n')
+
+  print('Hay', lt.size(info[1]), 'avistamientos en la ciudad de:', city)
+  print('\n\nLos primeros 3 avistamientos en la ciudad son:\n')
+
+  for i in lt.iterator(lt.subList(info[1], 1, 3)):
+    print('\n' + ('-' * terminalSize) + '\n')
+    printSighting(i)
+  
+  print('\n' + ('-' * terminalSize) + '\n')
+  
+  print('\n\nLos ultimos 3 avistamientos en la ciudad son:\n')
+
+  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 3, 3)):
+    print('\n' + ('-' * terminalSize) + '\n')
+    printSighting(i)
+  
+  
+  print('\n' + ('-' * terminalSize) + '\n')
 
 
 def printSighting(sighting):
@@ -107,7 +150,7 @@ def printSighting(sighting):
 def printMenu():
   print("Bienvenido")
   print("1- Cargar información en la base de datos")
-  print("2- ")
+  print("2- Contar los avistamientos en una ciudad")
 
 database = None
 
@@ -122,7 +165,7 @@ while True:
     database = initDatabase()
     loadData(database)
   elif int(inputs[0]) == 2:
-    pass
+    getOrderedCitiesByCount(database)
   else:
     sys.exit(0)
 sys.exit(0)

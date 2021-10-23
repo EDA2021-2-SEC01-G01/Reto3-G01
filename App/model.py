@@ -61,11 +61,11 @@ def addSighting(database, sighting):
   return database
 
 def updateDateIndex(map, sighting):
-  sightingTime = dt.strptime(sighting['datetime'], '%Y-%m-%d %H:%M:%S')
+  sightingTime = newTime(sighting['datetime'])
   entry = om.get(map, sightingTime.date())
 
   if entry is None:
-    dateEntry = newDataEntry(sighting)
+    dateEntry = newDateEntry(sighting)
     om.put(map, sightingTime.date(), dateEntry)
   else:
     dateEntry = me.getValue(entry)
@@ -73,19 +73,28 @@ def updateDateIndex(map, sighting):
 
 def updateCityIndex(map, sighting):
   sightingCityKey = newCityKey(sighting['city'])
+  sightingTime = newTime(sighting['datetime'])
   entry = om.get(map, sightingCityKey)
 
   if entry is None:
-    cityEntry = newDataEntry(sighting)
+    cityEntry = newCityEntry(sightingTime.date(), sighting)
     om.put(map, sightingCityKey, cityEntry)
   else:
     cityEntry = me.getValue(entry)
+    om.put(cityEntry, sightingTime.date(), sighting)
 
 # Funciones para creacion de datos
 
-def newDataEntry(sighting):
+def newDateEntry(sighting):
   entry = lt.newList(datastructure='SINGLE_LINKED')
   lt.addLast(entry, sighting)
+
+  return entry
+
+
+def newCityEntry(sightingTime, sighting):
+  entry = om.newMap(omaptype='RBT')
+  om.put(entry, sightingTime, sighting)
 
   return entry
 
@@ -98,8 +107,30 @@ def newCityKey(city):
 
   return int(key)
 
+
+def newTime(stringTime):
+  return dt.strptime(stringTime, '%Y-%m-%d %H:%M:%S')
+
 # Funciones de consulta
+
+def getOrderedCitiesByCount(database, city):
+  cityEntry = om.get(database['cityIndex'], city)
+
+  cities = om.valueSet(database['cityIndex'])
+  sightingsByCity = om.valueSet(me.getValue(cityEntry))
+
+  ms.sort(cities, sortBySightings)
+
+  listCities = lt.newList('SINGLE_LINKED')
+
+  for i in lt.iterator(cities):
+    lt.addLast(listCities, om.valueSet(i))
+
+  return (listCities, sightingsByCity)
 
 # Funciones de comparacion
 
 # Funciones de ordenamiento
+
+def sortBySightings(sighting1, sighting2):
+  return om.size(sighting1) > om.size(sighting2)

@@ -21,6 +21,7 @@
  """
 from os import get_terminal_size
 import config as cf
+import time
 import sys
 import controller
 from DISClib.ADT import list as lt
@@ -68,7 +69,9 @@ def loadData(database):
   if file is None:
     loadData(database)
   else:
+    initTime = time.time_ns()
     controller.loadData(database, file)
+    finalTime = (time.time_ns() - initTime) / 1000000000
     print('\n' + ('-' * terminalSize))
     string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
     print('\n', ' ' * ((terminalSize // 2) - len(string) // 2 - 1), string, ' ' * ((terminalSize - (terminalSize // 2)) - len(string) - 1))
@@ -89,16 +92,16 @@ def loadData(database):
 
     print('\n' + ('-' * terminalSize) + '\n\n')
 
+    print(finalTime)
+
 
 #=============================
 #           REQ. 1
 #=============================
 
-def getOrderedCitiesByCount(database):
-
-  city = input('Ingresa la ciudad: \n> ')
+def getOrderedCitiesByCount(database, city):
   info = controller.getOrderedCitiesByCount(database, city)
-  
+
   string = 'Contar los avistamientos en una ciudad'
   print('\n' + '=' * ((terminalSize // 2) - len(string) // 2), string, '=' * ((terminalSize // 2) - len(string) // 2 - 1))
 
@@ -131,6 +134,43 @@ def getOrderedCitiesByCount(database):
   print('\n' + ('-' * terminalSize) + '\n')
 
 
+#=============================
+#           REQ. 2
+#=============================
+
+def getOrderedSightingsByDuration(database, minTime, maxTime):
+  info = controller.getOrderedSightingsByDuration(database, minTime, maxTime)
+
+  string = 'Contar los avistamientos por duración'
+  print('\n' + '=' * ((terminalSize // 2) - len(string) // 2), string, '=' * ((terminalSize // 2) - len(string) // 2 - 1))
+
+  print('\nHay', lt.size(info[0]), 'diferentes duraiones por avistamiento de OVNIs...')
+  print('El Top 5 de las duraciones de avistamientos de OVNIs más largas es:')
+
+  for j in lt.iterator(lt.subList(info[0], 1, 5)):
+    i = lt.firstElement(j)
+    print('\n' + ('-' * terminalSize) + '\n')
+    print('Duración:', i['duration (seconds)'] + ', Cantidad:', lt.size(j))
+  
+  print('\n' + ('-' * terminalSize) + '\n')
+
+  print('Hay', lt.size(info[1]), 'avistamientos entre:', minTime, 'and', maxTime, 'duration.')
+  print('\n\nLos primeros 3 avistamientos con la duración especificada son:\n')
+
+  for i in lt.iterator(lt.subList(info[1], 1, 3)):
+    print('\n' + ('-' * terminalSize) + '\n')
+    printSighting(i)
+  
+  print('\n' + ('-' * terminalSize) + '\n')
+  
+  print('\n\nLos ultimos 3 avistamientos con la duración especificada son:\n')
+
+  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 3, 3)):
+    print('\n' + ('-' * terminalSize) + '\n')
+    printSighting(i)
+  
+  print('\n' + ('-' * terminalSize) + '\n')
+
 def printSighting(sighting):
   print('Fecha y hora: ', sighting['datetime'])
   print('Ciudad: ', sighting['city'])
@@ -151,6 +191,7 @@ def printMenu():
   print("Bienvenido")
   print("1- Cargar información en la base de datos")
   print("2- Contar los avistamientos en una ciudad")
+  print("3- Contar los avistamientos por duración")
 
 database = None
 
@@ -165,7 +206,12 @@ while True:
     database = initDatabase()
     loadData(database)
   elif int(inputs[0]) == 2:
-    getOrderedCitiesByCount(database)
+    city = input('Ingresa la ciudad: \n> ')
+    getOrderedCitiesByCount(database, city)
+  elif int(inputs[0]) == 3:
+    minTime = input('Ingresa la cantidad minima de segundos: \n> ')
+    maxTime = input('Ingresa la cantidad maxima de segundos: \n> ')
+    getOrderedSightingsByDuration(database, minTime, maxTime)
   else:
     sys.exit(0)
 sys.exit(0)

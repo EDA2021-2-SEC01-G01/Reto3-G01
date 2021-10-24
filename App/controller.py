@@ -52,3 +52,7 @@ def loadData(database, sightingsFile):
 def getOrderedCitiesByCount(database, city):
   cityKey = model.newCityKey(city)
   return model.getOrderedCitiesByCount(database, cityKey)
+
+
+def getOrderedSightingsByDuration(database, minTime, maxTime):
+  return model.getOrderedSightingsByDuration(database, float(maxTime), float(minTime))

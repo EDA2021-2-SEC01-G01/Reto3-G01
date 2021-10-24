@@ -25,6 +25,7 @@
  """
 
 
+from DISClib.DataStructures.arraylist import compareElements
 import config as cf
 from DISClib.ADT import list as lt
 from DISClib.ADT import orderedmap as om
@@ -49,6 +50,8 @@ def newDatabase():
 
   database['dateIndex'] = om.newMap(omaptype='RBT')
 
+  database['secondsIndex'] = om.newMap(omaptype='RBT', comparefunction=compareBySecondsAsc)
+
   return database
 
 
@@ -56,8 +59,9 @@ def newDatabase():
 
 def addSighting(database, sighting):
   lt.addLast(database['sightings'], sighting)
-  updateCityIndex(database['cityIndex'] ,sighting)
-  updateDateIndex(database['dateIndex'] ,sighting)
+  updateCityIndex(database['cityIndex'], sighting)
+  updateDateIndex(database['dateIndex'], sighting)
+  updateSecondsIndex(database['secondsIndex'], sighting)
   return database
 
 def updateDateIndex(map, sighting):
@@ -83,6 +87,21 @@ def updateCityIndex(map, sighting):
     cityEntry = me.getValue(entry)
     om.put(cityEntry, sightingTime.date(), sighting)
 
+
+def updateSecondsIndex(map, sighting):
+  seconds = float(sighting['duration (seconds)'])
+  cityCountryKey = sighting['city'] + sighting['country']
+
+  entry = om.get(map, seconds)
+
+  if entry is None:
+    secondsEntry = newSecondsEntry(cityCountryKey, sighting)
+    om.put(map, seconds, secondsEntry)
+  else:
+    secondsEntry = me.getValue(entry)
+    om.put(secondsEntry, cityCountryKey, sighting)
+
+
 # Funciones para creacion de datos
 
 def newDateEntry(sighting):
@@ -95,6 +114,13 @@ def newDateEntry(sighting):
 def newCityEntry(sightingTime, sighting):
   entry = om.newMap(omaptype='RBT')
   om.put(entry, sightingTime, sighting)
+
+  return entry
+
+
+def newSecondsEntry(sightingCityCountry, sighting):
+  entry = om.newMap(omaptype='RBT')
+  om.put(entry, sightingCityCountry, sighting)
 
   return entry
 
@@ -119,7 +145,7 @@ def getOrderedCitiesByCount(database, city):
   cities = om.valueSet(database['cityIndex'])
   sightingsByCity = om.valueSet(me.getValue(cityEntry))
 
-  ms.sort(cities, sortBySightings)
+  ms.sort(cities, sortByCitySightings)
 
   listCities = lt.newList('SINGLE_LINKED')
 
@@ -128,9 +154,44 @@ def getOrderedCitiesByCount(database, city):
 
   return (listCities, sightingsByCity)
 
+
+def getOrderedSightingsByDuration(database, minTime, maxTime):
+
+  durationsEntry = om.values(database['secondsIndex'], minTime, maxTime)
+
+  durations = om.valueSet(database['secondsIndex'])
+
+  listDurations = lt.newList('SINGLE_LINKED')
+
+  for i in lt.iterator(durations):
+    lt.addLast(listDurations, om.valueSet(i))
+
+  durationsEntryList = lt.newList('SINGLE_LINKED')
+
+  for i in lt.iterator(durationsEntry):
+    for j in lt.iterator(om.valueSet(i)):
+      lt.addLast(durationsEntryList, j)
+
+  ms.sort(durationsEntryList, sortByDatetime)
+
+  return (listDurations, durationsEntryList)
+
 # Funciones de comparacion
+
+def compareBySecondsAsc(key1, key2):
+  if key1 == key2:
+    return 0
+  elif key1 < key2:
+    return 1
+  else:
+    return -1
+
 
 # Funciones de ordenamiento
 
-def sortBySightings(sighting1, sighting2):
+def sortByCitySightings(sighting1, sighting2):
   return om.size(sighting1) > om.size(sighting2)
+
+
+def sortByDatetime(sighting1, sighting2):
+  return newTime(sighting1['datetime']).date() < newTime(sighting2['datetime']).date()

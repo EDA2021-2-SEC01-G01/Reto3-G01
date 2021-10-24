@@ -42,7 +42,7 @@ def initDatabase():
   return controller.init()
 
 
-def loadData(database):
+def loadData(database, testing):
   files = {
     '1': 'UFOS-utf8-small.csv',
     '2': 'UFOS-utf8-5pct.csv',
@@ -69,6 +69,10 @@ def loadData(database):
   if file is None:
     loadData(database)
   else:
+    if testing:
+      initTime = time.time_ns()
+      controller.loadData(database, file)
+      return round((time.time_ns() - initTime) / 1000000000, 3)
     controller.loadData(database, file)
     print('\n' + ('-' * terminalSize))
     string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
@@ -95,7 +99,12 @@ def loadData(database):
 #           REQ. 1
 #=============================
 
-def getOrderedCitiesByCount(database, city):
+def getOrderedCitiesByCount(database, city, testing):
+  if testing:
+    initTime = time.time_ns()
+    controller.getOrderedCitiesByCount(database, city)
+    return round((time.time_ns() - initTime) / 1000000000, 3)
+
   info = controller.getOrderedCitiesByCount(database, city)
 
   string = 'Contar los avistamientos en una ciudad'
@@ -134,7 +143,12 @@ def getOrderedCitiesByCount(database, city):
 #           REQ. 2
 #=============================
 
-def getOrderedSightingsByDuration(database, minTime, maxTime):
+def getOrderedSightingsByDuration(database, minTime, maxTime, testing):
+  if testing:
+    initTime = time.time_ns()
+    controller.getOrderedSightingsByDuration(database, minTime, maxTime)
+    return round((time.time_ns() - initTime) / 1000000000, 3)
+
   info = controller.getOrderedSightingsByDuration(database, minTime, maxTime)
 
   string = 'Contar los avistamientos por duración'
@@ -167,6 +181,31 @@ def getOrderedSightingsByDuration(database, minTime, maxTime):
   
   print('\n' + ('-' * terminalSize) + '\n')
 
+
+def testTime(database):
+  print("A que función se le desea hacer la prueba?")
+  print("1- Cargar información en la base de datos")
+  print("2- Contar los avistamientos en una ciudad")
+  print("3- Contar los avistamientos por duración")
+  print("4- Cancelar")
+  inputs = input('Seleccione una opción para continuar\n> ')
+  if int(inputs[0]) == 1:
+    print("Cargando información de los archivos ....")
+    database = initDatabase()
+    print('El proceso fue completado de forma exitosa en:', loadData(database, True), 's')
+    testTime(database)
+  elif int(inputs[0]) == 2:
+    print('El proceso fue completado de forma exitosa en:', getOrderedCitiesByCount(database, 'las vegas', True), 's')
+    testTime(database)
+  elif int(inputs[0]) == 3:
+    print('El proceso fue completado de forma exitosa en:', getOrderedSightingsByDuration(database, '30', '150', True), 's')
+    testTime(database)
+  elif int(inputs[0]) == 4:
+    print('Cancelado')
+  else:
+    testTime(database)
+
+
 def printSighting(sighting):
   print('Fecha y hora: ', sighting['datetime'])
   print('Ciudad: ', sighting['city'])
@@ -188,6 +227,7 @@ def printMenu():
   print("1- Cargar información en la base de datos")
   print("2- Contar los avistamientos en una ciudad")
   print("3- Contar los avistamientos por duración")
+  print("4- Prueba de tiempo de ejecución")
 
 database = None
 
@@ -200,14 +240,16 @@ while True:
   if int(inputs[0]) == 1:
     print("Cargando información de los archivos ....")
     database = initDatabase()
-    loadData(database)
+    loadData(database, False)
   elif int(inputs[0]) == 2:
     city = input('Ingresa la ciudad: \n> ')
-    getOrderedCitiesByCount(database, city)
+    getOrderedCitiesByCount(database, city, False)
   elif int(inputs[0]) == 3:
     minTime = input('Ingresa la cantidad minima de segundos: \n> ')
     maxTime = input('Ingresa la cantidad maxima de segundos: \n> ')
-    getOrderedSightingsByDuration(database, minTime, maxTime)
+    getOrderedSightingsByDuration(database, minTime, maxTime, False)
+  elif int(inputs[0]) == 4:
+    testTime(database)
   else:
     sys.exit(0)
 sys.exit(0)

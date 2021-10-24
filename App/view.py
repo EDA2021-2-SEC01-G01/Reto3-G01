@@ -69,9 +69,7 @@ def loadData(database):
   if file is None:
     loadData(database)
   else:
-    initTime = time.time_ns()
     controller.loadData(database, file)
-    finalTime = (time.time_ns() - initTime) / 1000000000
     print('\n' + ('-' * terminalSize))
     string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
     print('\n', ' ' * ((terminalSize // 2) - len(string) // 2 - 1), string, ' ' * ((terminalSize - (terminalSize // 2)) - len(string) - 1))

@@ -90,8 +90,6 @@ def loadData(database):
 
     print('\n' + ('-' * terminalSize) + '\n\n')
 
-    print(finalTime)
-
 
 #=============================
 #           REQ. 1

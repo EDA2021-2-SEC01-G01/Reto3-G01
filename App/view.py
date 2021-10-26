@@ -42,7 +42,7 @@ def initDatabase():
   return controller.init()
 
 
-def loadData(database, testing):
+def loadData(database):
   files = {
     '1': 'UFOS-utf8-small.csv',
     '2': 'UFOS-utf8-5pct.csv',
@@ -69,10 +69,6 @@ def loadData(database, testing):
   if file is None:
     loadData(database)
   else:
-    if testing:
-      initTime = time.time_ns()
-      controller.loadData(database, file)
-      return round((time.time_ns() - initTime) / 1000000000, 3)
     controller.loadData(database, file)
     print('\n' + ('-' * terminalSize))
     string = 'Se cargaron ' + str(lt.size(database['sightings'])) + ' avistamientos.'
@@ -99,11 +95,7 @@ def loadData(database, testing):
 #           REQ. 1
 #=============================
 
-def getOrderedCitiesByCount(database, city, testing):
-  if testing:
-    initTime = time.time_ns()
-    controller.getOrderedCitiesByCount(database, city)
-    return round((time.time_ns() - initTime) / 1000000000, 3)
+def getOrderedCitiesByCount(database, city):
 
   info = controller.getOrderedCitiesByCount(database, city)
 
@@ -143,11 +135,7 @@ def getOrderedCitiesByCount(database, city, testing):
 #           REQ. 2
 #=============================
 
-def getOrderedSightingsByDuration(database, minTime, maxTime, testing):
-  if testing:
-    initTime = time.time_ns()
-    controller.getOrderedSightingsByDuration(database, minTime, maxTime)
-    return round((time.time_ns() - initTime) / 1000000000, 3)
+def getOrderedSightingsByDuration(database, minTime, maxTime):
 
   info = controller.getOrderedSightingsByDuration(database, minTime, maxTime)
 
@@ -182,28 +170,19 @@ def getOrderedSightingsByDuration(database, minTime, maxTime, testing):
   print('\n' + ('-' * terminalSize) + '\n')
 
 
-def testTime(database):
-  print("A que función se le desea hacer la prueba?")
-  print("1- Cargar información en la base de datos")
-  print("2- Contar los avistamientos en una ciudad")
-  print("3- Contar los avistamientos por duración")
-  print("4- Cancelar")
-  inputs = input('Seleccione una opción para continuar\n> ')
-  if int(inputs[0]) == 1:
-    print("Cargando información de los archivos ....")
-    database = initDatabase()
-    print('El proceso fue completado de forma exitosa en:', loadData(database, True), 's')
-    testTime(database)
-  elif int(inputs[0]) == 2:
-    print('El proceso fue completado de forma exitosa en:', getOrderedCitiesByCount(database, 'las vegas', True), 's')
-    testTime(database)
-  elif int(inputs[0]) == 3:
-    print('El proceso fue completado de forma exitosa en:', getOrderedSightingsByDuration(database, '30', '150', True), 's')
-    testTime(database)
-  elif int(inputs[0]) == 4:
-    print('Cancelado')
-  else:
-    testTime(database)
+#=============================
+#           REQ. 5
+#=============================
+
+def getOrderedSightingsByLocation(database, minLatitude, maxLatitude, minLongitude, maxLongitude):
+  print(controller.getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude))
+
+
+def testTime(function, *args):
+  initialTime = time.time_ns()
+  function(*args)
+  finalTime = (time.time_ns() - initialTime) / 1000000000
+  print('El proceso fue completado de forma exitosa en:', str(round(finalTime, 3)) + 's')
 
 
 def printSighting(sighting):
@@ -222,12 +201,21 @@ def printSighting(sighting):
   print('\tLongitud:', sighting['longitude'])
 
 
+def printTestTimeMenu():
+  print("Prueba de tiempo de ejecución")
+  print("1- Cargar información en la base de datos")
+  print("2- Contar los avistamientos en una ciudad")
+  print("3- Contar los avistamientos por duración")
+  print("6- Contar los avistamientos de una Zona Geográfica")
+
+
 def printMenu():
   print("Bienvenido")
   print("1- Cargar información en la base de datos")
   print("2- Contar los avistamientos en una ciudad")
   print("3- Contar los avistamientos por duración")
-  print("4- Prueba de tiempo de ejecución")
+  print("6- Contar los avistamientos de una Zona Geográfica")
+  print("7- Prueba de tiempo de ejecución")
 
 database = None
 
@@ -240,16 +228,28 @@ while True:
   if int(inputs[0]) == 1:
     print("Cargando información de los archivos ....")
     database = initDatabase()
-    loadData(database, False)
+    loadData(database)
   elif int(inputs[0]) == 2:
     city = input('Ingresa la ciudad: \n> ')
-    getOrderedCitiesByCount(database, city, False)
+    getOrderedCitiesByCount(database, city)
   elif int(inputs[0]) == 3:
     minTime = input('Ingresa la cantidad minima de segundos: \n> ')
     maxTime = input('Ingresa la cantidad maxima de segundos: \n> ')
-    getOrderedSightingsByDuration(database, minTime, maxTime, False)
-  elif int(inputs[0]) == 4:
-    testTime(database)
+    getOrderedSightingsByDuration(database, minTime, maxTime)
+  elif int(inputs[0]) == 6:
+    minLatitude = input('Ingresa la latitud minima: ')
+    maxLatitude = input('Ingresa la latitud maxima: ')
+    minLongitude = input('Ingresa la longitud minima: ')
+    maxLongitude = input('Ingresa la longitud maxima: ')
+    getOrderedSightingsByLocation(database, minLatitude, maxLatitude, minLongitude, maxLongitude)
+  elif int(inputs[0]) == 7:
+    printTestTimeMenu()
+    functionToTest = int(input('Seleccione la función a probar:\n> ')[0])
+    if functionToTest == 1:
+      database = initDatabase()
+      testTime(controller.loadData, database, 'UFOS-utf8-large.csv')
+    if functionToTest == 2:
+      testTime(controller.getOrderedCitiesByCount, database, 'las vegas')
   else:
     sys.exit(0)
 sys.exit(0)

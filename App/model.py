@@ -25,7 +25,6 @@
  """
 
 
-from DISClib.DataStructures.arraylist import compareElements
 import config as cf
 from DISClib.ADT import list as lt
 from DISClib.ADT import orderedmap as om
@@ -52,6 +51,8 @@ def newDatabase():
 
   database['secondsIndex'] = om.newMap(omaptype='RBT', comparefunction=compareBySecondsAsc)
 
+  database['locationsIndex'] = om.newMap(omaptype='RBT', comparefunction=compareCoors)
+
   return database
 
 
@@ -62,6 +63,7 @@ def addSighting(database, sighting):
   updateCityIndex(database['cityIndex'], sighting)
   updateDateIndex(database['dateIndex'], sighting)
   updateSecondsIndex(database['secondsIndex'], sighting)
+  updateCoorsIndex(database['locationsIndex'], sighting)
   return database
 
 def updateDateIndex(map, sighting):
@@ -102,6 +104,19 @@ def updateSecondsIndex(map, sighting):
     om.put(secondsEntry, cityCountryKey, sighting)
 
 
+def updateCoorsIndex(map, sighting):
+  coors = sighting['latitude'] + '_' + sighting['longitude']
+  datetimeKey = newTime(sighting['datetime']).date()
+
+  entry = om.get(map, coors)
+
+  if entry is None:
+    coorsEntry = newCoorsEntry(datetimeKey, sighting)
+    om.put(map, coors, coorsEntry)
+  else:
+    coorsEntry = me.getValue(entry)
+    om.put(coorsEntry, datetimeKey, sighting)
+
 # Funciones para creacion de datos
 
 def newDateEntry(sighting):
@@ -121,6 +136,13 @@ def newCityEntry(sightingTime, sighting):
 def newSecondsEntry(sightingCityCountry, sighting):
   entry = om.newMap(omaptype='RBT')
   om.put(entry, sightingCityCountry, sighting)
+
+  return entry
+
+
+def newCoorsEntry(sightingTime, sighting):
+  entry = om.newMap(omaptype='RBT')
+  om.put(entry, sightingTime, sighting)
 
   return entry
 
@@ -176,6 +198,22 @@ def getOrderedSightingsByDuration(database, minTime, maxTime):
 
   return (listDurations, durationsEntryList)
 
+
+def getOrderedSightingsByLocation(database, minLocation, maxLocation):
+
+  locationsEntry = om.values(database['locationsIndex'], minLocation, maxLocation)
+
+  listLocations = lt.newList('SINGLE_LINKED')
+
+  for i in lt.iterator(locationsEntry):
+    for j in lt.iterator(om.valueSet(i)):
+      lt.addLast(listLocations, j)
+
+  ms.sort(listLocations, sortByLocation)
+
+  return listLocations
+
+
 # Funciones de comparacion
 
 def compareBySecondsAsc(key1, key2):
@@ -187,6 +225,30 @@ def compareBySecondsAsc(key1, key2):
     return -1
 
 
+def isLongestLocation(key1, key2):
+  latitude = key1.split('_')[0]
+  longitude = key1.split('_')[1]
+
+  latitude2 = key2.split('_')[0]
+  longitude2 = key2.split('_')[1]
+
+  if latitude > latitude2:
+    return True
+  elif longitude > longitude2:
+    return True
+  else:
+    return False
+
+
+def compareCoors(key1, key2):
+  if key1 == key2:
+    return 0
+  elif not isLongestLocation(key1, key2):
+    return -1
+  else:
+    return 1
+
+
 # Funciones de ordenamiento
 
 def sortByCitySightings(sighting1, sighting2):
@@ -195,3 +257,10 @@ def sortByCitySightings(sighting1, sighting2):
 
 def sortByDatetime(sighting1, sighting2):
   return newTime(sighting1['datetime']).date() < newTime(sighting2['datetime']).date()
+
+
+def sortByLocation(sighting1, sighting2):
+  coors1 = sighting1['latitude'] + '_' + sighting1['longitude']
+  coors2 = sighting2['latitude'] + '_' + sighting2['longitude']
+  
+  return isLongestLocation(coors2, coors1)

@@ -56,3 +56,10 @@ def getOrderedCitiesByCount(database, city):
 
 def getOrderedSightingsByDuration(database, minTime, maxTime):
   return model.getOrderedSightingsByDuration(database, float(maxTime), float(minTime))
+
+
+def getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude):
+  minLocation = minLatitude + '_' + minLongitude
+  maxLocation = maxLatitude + '_' + maxLongitude
+
+  return model.getOrderedSightingsByLocation(database, minLocation, maxLocation)

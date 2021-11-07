@@ -106,9 +106,9 @@ def getOrderedCitiesByCount(database, city):
   print('El Top 5 de las ciudades con más avistamientos de OVNIs es:')
 
   for j in lt.iterator(lt.subList(info[0], 1, 5)):
-    i = lt.firstElement(j)
+    i = lt.firstElement(j['sightings'])
     print('\n' + ('-' * terminalSize) + '\n')
-    print('Ciudad:', i['city'] + ', Cantidad:', lt.size(j))
+    print('Ciudad:', i['city'] + ', Cantidad:', lt.size(j['sightings']))
   
   print('\n' + ('-' * terminalSize) + '\n')
 
@@ -123,13 +123,14 @@ def getOrderedCitiesByCount(database, city):
   
   print('\n\nLos ultimos 3 avistamientos en la ciudad son:\n')
 
-  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 3, 3)):
+  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 2, 3)):
     print('\n' + ('-' * terminalSize) + '\n')
     printSighting(i)
   
   
   print('\n' + ('-' * terminalSize) + '\n')
 
+# 
 
 #=============================
 #           REQ. 2
@@ -175,7 +176,7 @@ def getOrderedSightingsByDuration(database, minTime, maxTime):
 #=============================
 
 def getOrderedSightingsByLocation(database, minLatitude, maxLatitude, minLongitude, maxLongitude):
-  print(controller.getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude))
+  controller.getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude)
 
 
 def testTime(function, *args):

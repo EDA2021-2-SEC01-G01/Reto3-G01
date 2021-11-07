@@ -50,8 +50,8 @@ def loadData(database, sightingsFile):
 # Funciones de consulta sobre el catálogo
 
 def getOrderedCitiesByCount(database, city):
-  cityKey = model.newCityKey(city)
-  return model.getOrderedCitiesByCount(database, cityKey)
+  citykey = model.newCityKey(city)
+  return model.getOrderedCitiesByCount(database, citykey)
 
 
 def getOrderedSightingsByDuration(database, minTime, maxTime):

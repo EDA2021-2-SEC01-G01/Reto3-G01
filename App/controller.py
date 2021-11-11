@@ -78,3 +78,6 @@ def getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitu
   maxLocation = maxLatitude + '_' + maxLongitude
 
   return model.getOrderedSightingsByLocation(database, minLocation, maxLocation)
+
+def sortByDate(lst):
+  return model.sortD(lst) 

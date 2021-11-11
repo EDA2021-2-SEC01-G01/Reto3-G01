@@ -201,7 +201,7 @@ def getSightsBetweenDates(database, startDate, endDate):
   sightingsInRange = lt.newList('ARRAY_LIST')
 
   for lst in lt.iterator(datesInRange):
-    for sight in lt.iterator(lst['sightings']):
+    for sight in lt.iterator(lst):
       lt.addLast(sightingsInRange, sight)
 
   allDates = om.valueSet(database['dateIndex'])
@@ -318,3 +318,11 @@ def sortByLocation(sighting1, sighting2):
 def sortByHour(sighting_1, sighting_2):
   boolean = datetime.strptime(sighting_1['datetime'], '%Y-%m-%d %H:%M:%S').time() < datetime.strptime(sighting_2['datetime'], '%Y-%m-%d %H:%M:%S').time()
   return boolean 
+
+
+def sortD(lst):
+  sa.sort(lst, sortByDate)
+  return lst
+
+def sortByDate(one, two):
+  return datetime.strptime(one['date'], '%Y-%m-%d').date() < datetime.strptime(two['date'], '%Y-%m-%d').date()

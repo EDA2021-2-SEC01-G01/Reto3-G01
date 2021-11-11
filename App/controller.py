@@ -20,6 +20,7 @@
  * along withthis program.  If not, see <http://www.gnu.org/licenses/>.
  """
 
+from datetime import datetime
 import config as cf
 import model
 import csv
@@ -49,9 +50,23 @@ def loadData(database, sightingsFile):
 
 # Funciones de consulta sobre el catálogo
 
+def getSightsByHour(database, timeMinor, timeMaximun):
+  timeMinor = datetime.strptime(timeMinor + ':00', '%H:%M:%S').time()
+  timeMaximun = datetime.strptime(timeMaximun + ':00', '%H:%M:%S').time()
+
+  return model.getSightsByHour(database, timeMinor, timeMaximun)
+
+
+def getSightsBetweenDates(database, startDate, endDate):
+  startDate = datetime.strptime(startDate, '%Y-%m-%d').date()
+  endDate = datetime.strptime(endDate, '%Y-%m-%d').date()
+
+  return model.getSightsBetweenDates(database, startDate, endDate)
+
+
 def getOrderedCitiesByCount(database, city):
-  citykey = model.newCityKey(city)
-  return model.getOrderedCitiesByCount(database, citykey)
+  cityKey = model.newCityKey(city)
+  return model.getOrderedCitiesByCount(database, cityKey)
 
 
 def getOrderedSightingsByDuration(database, minTime, maxTime):

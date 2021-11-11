@@ -106,9 +106,9 @@ def getOrderedCitiesByCount(database, city):
   print('El Top 5 de las ciudades con más avistamientos de OVNIs es:')
 
   for j in lt.iterator(lt.subList(info[0], 1, 5)):
-    i = lt.firstElement(j['sightings'])
+    i = lt.firstElement(j)
     print('\n' + ('-' * terminalSize) + '\n')
-    print('Ciudad:', i['city'] + ', Cantidad:', lt.size(j['sightings']))
+    print('Ciudad:', i['city'] + ', Cantidad:', lt.size(j))
   
   print('\n' + ('-' * terminalSize) + '\n')
 
@@ -123,14 +123,13 @@ def getOrderedCitiesByCount(database, city):
   
   print('\n\nLos ultimos 3 avistamientos en la ciudad son:\n')
 
-  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 2, 3)):
+  for i in lt.iterator(lt.subList(info[1], lt.size(info[1]) - 3, 3)):
     print('\n' + ('-' * terminalSize) + '\n')
     printSighting(i)
   
   
   print('\n' + ('-' * terminalSize) + '\n')
 
-# 
 
 #=============================
 #           REQ. 2
@@ -170,13 +169,91 @@ def getOrderedSightingsByDuration(database, minTime, maxTime):
   
   print('\n' + ('-' * terminalSize) + '\n')
 
+#=============================
+#           REQ. 3
+#=============================
+
+def getSightsByHour(database, timeMinor, timeMaximun):
+  data = controller.getSightsByHour(database, timeMinor, timeMaximun)
+
+  print("There are "+ str(lt.size(data[0])) + " UFO sightings with different times [hh:mm:ss]...")
+  print("The last UFO sighting is: \n")
+
+  last = lt.subList(data[0], lt.size(data[0]), 1)
+
+  for i in lt.iterator(last):
+    print("> "+str(i["hourIndex"])+" : "+ str(lt.size(i["sightings"]))+ "\n")
+
+  print("There are "+str(lt.size(data[1]))+" sightings between"+timeMinor+ " and "+ timeMaximun)
+
+  first3 = lt.subList(data[1], 1, 3)
+  last3 = lt.subList(data[1], lt.size(data[1]) - 2, 3)
+
+  print("The first 3 and last 3 UFO sightings in this time are: ")
+  for sight in lt.iterator(first3):
+    print('\nFecha y hora:', sight['datetime'])
+    print('Ciudad:', sight['city'])
+    print('Estado:', sight['state'])
+    print('País:', sight['country'])
+    print('Duración(s):', sight['duration (seconds)'])
+    print('Forma:', sight['shape'])
+    print("------------------------------------------------\n")
+        
+  for sight in lt.iterator(last3):
+    print('\nFecha y hora:', sight['datetime'])
+    print('Ciudad:', sight['city'])
+    print('Estado:', sight['state'])
+    print('País:', sight['country'])
+    print('Duración(s):', sight['duration (seconds)'])
+    print('Forma:', sight['shape'])
+    print("------------------------------------------------\n")
+
+
+#=============================
+#           REQ. 4
+#=============================
+
+def getSightsBetweenDates(database, startDate, endDate):
+  data = controller.getSightsBetweenDates(database, startDate, endDate)
+
+  print('Hay', lt.size(data[0]), 'diferentes fechas.')
+  print('El top 5 más antiguo es: \n')
+  
+  top5 = lt.subList(data[0], 1, 5)
+    
+  sorted = controller.sortByDate(top5)
+
+  for duration in lt.iterator(sorted):
+    print(duration['date'], ':', lt.size(duration['sightings']))
+    
+  print('\nThere are', lt.size(data[1]), 'UFO sightings between the dates.')
+  print('First 3 and last 3 sightings are: ')
+
+  for sighting in lt.iterator(lt.subList(data[1], 1, 3)):
+    print('\nFecha y hora:', sighting['datetime'])
+    print('Ciudad:', sighting['city'])
+    print('Estado:', sighting['state'])
+    print('País:', sighting['country'])
+    print('Duración(s):', sighting['duration (seconds)'])
+    print('Forma:', sighting['shape'])
+    print("\n------------------------------------------------\n")
+        
+  for sighting in lt.iterator(lt.subList(data[1], lt.size(data[1]) - 2, 3)):
+    print('\nFecha y hora:', sighting['datetime'])
+    print('Ciudad:', sighting['city'])
+    print('Estado:', sighting['state'])
+    print('País:', sighting['country'])
+    print('Duración(s):', sighting['duration (seconds)'])
+    print('Forma:', sighting['shape'])
+    print("\n------------------------------------------------\n")
+    
 
 #=============================
 #           REQ. 5
 #=============================
 
 def getOrderedSightingsByLocation(database, minLatitude, maxLatitude, minLongitude, maxLongitude):
-  controller.getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude)
+  print(controller.getOrderedSightingsByLocation(database, minLatitude, minLongitude, maxLatitude, maxLongitude))
 
 
 def testTime(function, *args):
@@ -215,6 +292,8 @@ def printMenu():
   print("1- Cargar información en la base de datos")
   print("2- Contar los avistamientos en una ciudad")
   print("3- Contar los avistamientos por duración")
+  print("4- Contar avistamientos por Hora/Minutos del día")
+  print("5- Contar los avistamientos en un rango de fechas")
   print("6- Contar los avistamientos de una Zona Geográfica")
   print("7- Prueba de tiempo de ejecución")
 
@@ -237,6 +316,14 @@ while True:
     minTime = input('Ingresa la cantidad minima de segundos: \n> ')
     maxTime = input('Ingresa la cantidad maxima de segundos: \n> ')
     getOrderedSightingsByDuration(database, minTime, maxTime)
+  elif int(inputs[0]) == 4:
+    time1 = input("Ingrese la hora en la que inicia el intervalo (HH:MM) \n> ")
+    time2 = input("Ingrese la hora en la que finaliza el intervalo (HH:MM) \n> ")
+    getSightsByHour(database, time1, time2)
+  elif int(inputs[0]) == 5:
+    startDate = input("Ingrese la fecha inicial del intervalo (AAAA-MM-DD) \n> ")
+    endDate = input("Ingrese la fecha final del intervalo (AAAA-MM-DD) \n> ")
+    getSightsBetweenDates(database, startDate, endDate)
   elif int(inputs[0]) == 6:
     minLatitude = input('Ingresa la latitud minima: ')
     maxLatitude = input('Ingresa la latitud maxima: ')

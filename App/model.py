@@ -26,29 +26,19 @@
 
 
 import config as cf
+from datetime import datetime
 from DISClib.ADT import list as lt
 from DISClib.ADT import orderedmap as om
 from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Sorting import mergesort as ms
+from DISClib.Algorithms.Sorting import shellsort as sa
 from datetime import datetime as dt
-import time
 assert cf
 
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
 los mismos.
 """
-
-mapa = om.newMap(omaptype='RBT')
-om.put(mapa, 2, 2)
-om.put(mapa, 3, 3)
-om.put(mapa, 4, 4)
-om.put(mapa, 1, 1)
-om.put(mapa, 6, 6)
-om.put(mapa, 7, 7)
-om.put(mapa, 5, 5)
-print(om.height(mapa))
-print(mapa)
 
 # Construccion de modelos
 
@@ -57,9 +47,11 @@ def newDatabase():
 
   database['sightings'] = lt.newList('ARRAY_LIST')
 
-  database['sightingsByCity'] = om.newMap(omaptype='RBT')
+  database['cityIndex'] = om.newMap(omaptype='RBT')
 
   database['dateIndex'] = om.newMap(omaptype='RBT')
+
+  database['hourIndex'] = om.newMap(omaptype='RBT')
 
   database['secondsIndex'] = om.newMap(omaptype='RBT', comparefunction=compareBySecondsAsc)
 
@@ -68,21 +60,16 @@ def newDatabase():
   return database
 
 
-# Funciones para agregar informacion al catalogo
+# Funciones para agregar informacion al databaseo
 
 def addSighting(database, sighting):
   lt.addLast(database['sightings'], sighting)
-
+  updateCityIndex(database['cityIndex'], sighting)
   updateDateIndex(database['dateIndex'], sighting)
-
-  updateCityIndex(database['sightingsByCity'], sighting)
-  
   updateSecondsIndex(database['secondsIndex'], sighting)
-
   updateCoorsIndex(database['locationsIndex'], sighting)
-
+  updateHourIndex(database, sighting)
   return database
-
 
 def updateDateIndex(map, sighting):
   sightingTime = newTime(sighting['datetime'])
@@ -97,14 +84,15 @@ def updateDateIndex(map, sighting):
 
 def updateCityIndex(map, sighting):
   sightingCityKey = newCityKey(sighting['city'])
+  sightingTime = newTime(sighting['datetime'])
   entry = om.get(map, sightingCityKey)
 
   if entry is None:
-    cityEntry = newCityEntry(sighting)
+    cityEntry = newCityEntry(sightingTime.date(), sighting)
     om.put(map, sightingCityKey, cityEntry)
   else:
     cityEntry = me.getValue(entry)
-    lt.addLast(cityEntry['sightings'], sighting)
+    om.put(cityEntry, sightingTime.date(), sighting)
 
 
 def updateSecondsIndex(map, sighting):
@@ -122,7 +110,7 @@ def updateSecondsIndex(map, sighting):
 
 
 def updateCoorsIndex(map, sighting):
-  coors = str(round(float(sighting['latitude']), 2)) + '_' + str(round(float(sighting['longitude']), 2))
+  coors = sighting['latitude'] + '_' + sighting['longitude']
   datetimeKey = newTime(sighting['datetime']).date()
 
   entry = om.get(map, coors)
@@ -134,6 +122,20 @@ def updateCoorsIndex(map, sighting):
     coorsEntry = me.getValue(entry)
     om.put(coorsEntry, datetimeKey, sighting)
 
+def updateHourIndex(database, sighting):
+  existingHour = om.get(database['hourIndex'], datetime.strptime(sighting['datetime'], '%Y-%m-%d %H:%M:%S').time())
+
+  if existingHour is not None:
+    timeLst = me.getValue(existingHour)
+    lt.addLast(timeLst['sightings'], sighting)
+  else:
+    timeLst = lt.newList()
+    lt.addLast(timeLst, sighting)
+    om.put(database["hourIndex"], datetime.strptime(sighting['datetime'], '%Y-%m-%d %H:%M:%S').time(), {
+      "hourIndex": sighting['datetime'].split(' ')[1],
+      'sightings': timeLst,
+    })
+
 # Funciones para creacion de datos
 
 def newDateEntry(sighting):
@@ -143,22 +145,11 @@ def newDateEntry(sighting):
   return entry
 
 
-def newCityEntry(sighting):
-  entry = {}
-  entry['city'] = sighting['city']
-  entry['sightings'] = lt.newList()
-  lt.addLast(entry['sightings'], sighting)
+def newCityEntry(sightingTime, sighting):
+  entry = om.newMap(omaptype='RBT')
+  om.put(entry, sightingTime, sighting)
 
   return entry
-
-
-def newCityKey(city):
-  compiledStrings = ''
-
-  for i in city:
-    compiledStrings += str(ord(i))
-
-  return int(compiledStrings)
 
 
 def newSecondsEntry(sightingCityCountry, sighting):
@@ -175,23 +166,65 @@ def newCoorsEntry(sightingTime, sighting):
   return entry
 
 
+def newCityKey(city):
+  key = ''
+
+  for i in city:
+    key += str(ord(i))
+
+  return int(key)
+
+
 def newTime(stringTime):
   return dt.strptime(stringTime, '%Y-%m-%d %H:%M:%S')
 
 # Funciones de consulta
 
-def getOrderedCitiesByCount(database, city):
-  cityEntry = om.get(database['sightingsByCity'], city)
-
-  cities = om.valueSet(database['sightingsByCity'])
+def getSightsByHour(database, timeMinor, timeMaximun):
+  sightsInRange = om.values(database["hourIndex"], timeMinor, timeMaximun)
   
-  sightingsByCity = me.getValue(cityEntry)['sightings']
+  sightsInRangelst = lt.newList("ARRAY_LIST")
+
+  for lst in lt.iterator(sightsInRange):
+    for sight in lt.iterator(lst["sightings"]):
+      lt.addLast(sightsInRangelst, sight)
+
+  allHours = om.valueSet(database["hourIndex"])
+  sa.sort(sightsInRangelst, sortByHour)
+
+  return (allHours, sightsInRangelst)
+
+
+def getSightsBetweenDates(database, startDate, endDate):
+  datesInRange = om.values(database['dateIndex'], startDate, endDate)
+
+  sightingsInRange = lt.newList('ARRAY_LIST')
+
+  for lst in lt.iterator(datesInRange):
+    for sight in lt.iterator(lst['sightings']):
+      lt.addLast(sightingsInRange, sight)
+
+  allDates = om.valueSet(database['dateIndex'])
+
+  sa.sort(sightingsInRange, sortByDatetime)
+
+  return (allDates, sightingsInRange)
+
+
+def getOrderedCitiesByCount(database, city):
+  cityEntry = om.get(database['cityIndex'], city)
+
+  cities = om.valueSet(database['cityIndex'])
+  sightingsByCity = om.valueSet(me.getValue(cityEntry))
 
   ms.sort(cities, sortByCitySightings)
-  
-  ms.sort(sightingsByCity, sortByDatetime)
 
-  return (cities, sightingsByCity)
+  listCities = lt.newList('SINGLE_LINKED')
+
+  for i in lt.iterator(cities):
+    lt.addLast(listCities, om.valueSet(i))
+
+  return (listCities, sightingsByCity)
 
 
 def getOrderedSightingsByDuration(database, minTime, maxTime):
@@ -218,9 +251,7 @@ def getOrderedSightingsByDuration(database, minTime, maxTime):
 
 def getOrderedSightingsByLocation(database, minLocation, maxLocation):
 
-  locationsEntry = om.keys(database['locationsIndex'], minLocation, maxLocation)
-
-  print(minLocation, maxLocation, locationsEntry)
+  locationsEntry = om.values(database['locationsIndex'], minLocation, maxLocation)
 
   listLocations = lt.newList('SINGLE_LINKED')
 
@@ -245,20 +276,19 @@ def compareBySecondsAsc(key1, key2):
 
 
 def isLongestLocation(key1, key2):
-  latitude = float(key1.split('_')[0])
-  longitude = float(key1.split('_')[1])
+  latitude = key1.split('_')[0]
+  longitude = key1.split('_')[1]
 
-  latitude2 = float(key2.split('_')[0])
-  longitude2 = float(key2.split('_')[1])
+  latitude2 = key2.split('_')[0]
+  longitude2 = key2.split('_')[1]
 
-  if latitude < latitude2 or longitude < longitude2:
+  if latitude > latitude2:
+    return True
+  elif longitude > longitude2:
     return True
   else:
     return False
 
-print(isLongestLocation('37_-103', '32.72_-100.92'))
-
-print(isLongestLocation('37_-103', '32.72_-100.92'))
 
 def compareCoors(key1, key2):
   if key1 == key2:
@@ -272,13 +302,7 @@ def compareCoors(key1, key2):
 # Funciones de ordenamiento
 
 def sortByCitySightings(sighting1, sighting2):
-  if lt.size(sighting1['sightings']) > lt.size(sighting2['sightings']):
-    return True
-  elif lt.size(sighting1['sightings']) < lt.size(sighting2['sightings']):
-    return False
-  else:
-    return sighting1['city'] < sighting2['city']
-    
+  return om.size(sighting1) > om.size(sighting2)
 
 
 def sortByDatetime(sighting1, sighting2):
@@ -286,7 +310,11 @@ def sortByDatetime(sighting1, sighting2):
 
 
 def sortByLocation(sighting1, sighting2):
-  coors1 =  str(round(float(sighting1['latitude']), 2)) + '_' + str(round(float(sighting1['longitude']), 2))
-  coors2 = str(round(float(sighting2['latitude']), 2)) + '_' + str(round(float(sighting2['longitude']), 2))
+  coors1 = sighting1['latitude'] + '_' + sighting1['longitude']
+  coors2 = sighting2['latitude'] + '_' + sighting2['longitude']
   
   return isLongestLocation(coors2, coors1)
+
+def sortByHour(sighting_1, sighting_2):
+  boolean = datetime.strptime(sighting_1['datetime'], '%Y-%m-%d %H:%M:%S').time() < datetime.strptime(sighting_2['datetime'], '%Y-%m-%d %H:%M:%S').time()
+  return boolean 
